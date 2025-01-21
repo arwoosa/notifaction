@@ -1,0 +1,22 @@
+service: notification
+
+api:
+  port: 6721
+  debug: true
+
+
+log:
+  level: debug
+  target: os
+
+
+aws:
+  ses:
+    from: developer@arwork.tw
+    region: ap-northeast-1
+    credentails:
+      filename: ./.aws/credentials
+      profile: default
+
+identity:
+  url: http://kratos:4434/admin/identities
