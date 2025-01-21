@@ -12,11 +12,11 @@ log:
 
 aws:
   ses:
-    from: developer@arwork.tw
+    from: "\"OOSA Group\" <developer@arwork.tw>"
     region: ap-northeast-1
     credentails:
       filename: ./.aws/credentials
       profile: default
 
 identity:
-  url: http://kratos:4434/admin/identities
+  url: http://localhost:4434/admin/identities
