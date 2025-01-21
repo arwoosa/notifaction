@@ -58,7 +58,10 @@ func (m *notification) createNotification(c *gin.Context) {
 	requestBody.Data["FROM"] = cl.From.Name
 	var errSends []sendError
 	for _, lang := range cl.GetLangs() {
-		for _, info := range cl.GetInfos(lang) {
+		for i, info := range cl.GetInfos(lang) {
+			if i > 0 {
+				time.Sleep(200 * time.Microsecond)
+			}
 			requestBody.Data["TO"] = info.Name
 			_, err = sender.Send(&service.Notification{
 				Event:  requestBody.Event,
@@ -70,7 +73,6 @@ func (m *notification) createNotification(c *gin.Context) {
 			if err != nil {
 				errSends = append(errSends, sendError{err: err, info: info})
 			}
-			time.Sleep(200 * time.Microsecond)
 		}
 	}
 
