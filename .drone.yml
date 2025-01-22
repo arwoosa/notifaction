@@ -1,0 +1,29 @@
+---
+kind: pipeline
+type: exec
+name: default
+
+platform:
+  os: darwin
+  arch: amd64
+
+steps:
+- name: build-docker-image
+  commands:
+  - make docker IMAGE_TAG=test
+- name: restart service
+  commands:
+  - mkdir ./.aws && echo "$"
+  - docker compose -f .docker-compose/test.yml down
+  - docker compose -f .docker-compose/test.yml up -d
+  - docker image prune -f
+  environment:
+    AWS_CREDENTIALS_CONTENT:
+      from_secret: aws_credentials
+
+trigger:
+  branch:
+  - main
+  event:
+  - push
+...

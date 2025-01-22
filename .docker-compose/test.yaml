@@ -1,0 +1,19 @@
+networks:
+  oosa-network:
+    external: true
+    name: network.oosa
+
+name: oosa-api-service
+services:
+  oosa_notify:
+    container_name: oosa_notify
+    image: arwoosa/notifaction:test
+    restart: always
+    volumes:
+    - ./.aws:/etc/aws
+    environment:
+      - aws.ses.credentials.filename=/etc/aws/credentials
+      - aws.ses.from="\"OOSA Test Group\" <developer@arwork.tw>"
+      - identity.url=http://kratos:4434/admin/identities
+    networks:
+    - oosa-network
