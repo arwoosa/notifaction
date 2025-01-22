@@ -12,8 +12,8 @@ services:
     volumes: 
       - $HOME/goproject/arwoosa/secrets/.aws:/etc/aws
     environment:
-      - aws.ses.credentials.filename=/etc/aws/credentials
-      - aws.ses.from="\"OOSA Test Group\" <developer@arwork.tw>"
-      - identity.url=http://kratos:4434/admin/identities
+      - AWS_SES_CREDENTIALS_FILENAME=/etc/aws/credentials
+      - AWS_SES_FROM="\"OOSA Test Group\" <developer@arwork.tw>"
+      - IDENTITY_URL=http://kratos:4434/admin/identities
     networks:
     - oosa-network
