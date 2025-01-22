@@ -1,0 +1,39 @@
+ARG APP_NAME="notifaction"
+# Get the latest golang image
+FROM golang:1.23-bullseye AS base
+
+ARG APP_NAME
+# Set the Current Working Directory inside the container
+WORKDIR /go/src/github.com/arwoosa/${APP_NAME}
+
+# Copy everything from the current directory to the PWD(Present Working Directory) inside the container
+COPY . .
+
+ENV GO111MODULE on
+# Download all the dependencies
+RUN go mod download -x
+
+ARG COMMIT
+ARG BUILD_DATE
+
+
+# Install compile daemon for hot reloading
+# RUN go install -mod=mod github.com/githubnemo/CompileDaemon
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+-ldflags "-X 'github.com/arwoosa/notifaction/config.Commit=${COMMIT}' -X 'github.com/arwoosa/notifaction/config.Date=${BUILD_DATE}'" \
+-o /${APP_NAME} .
+
+FROM gcr.io/distroless/static-debian11
+
+ARG APP_NAME
+
+COPY --from=base /${APP_NAME} /usr/bin/${APP_NAME}
+COPY --from=base /go/src/github.com/arwoosa/${APP_NAME}/.${APP_NAME}.yaml /etc/config.yaml
+
+# Expose port 80 to the outside world
+EXPOSE 9080
+
+# Command to run the executable
+# ENTRYPOINT CompileDaemon -build="go build main.go" -command="./main"
+ENTRYPOINT [ "notifaction" ]
+CMD ["serve", "-c", "/etc/config.yaml"]
