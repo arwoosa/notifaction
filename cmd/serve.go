@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/94peter/microservice"
 	"github.com/arwoosa/notifaction/router"
@@ -23,10 +24,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		showInfo()
 		fmt.Println("serve called", viper.GetString("service"))
 		apiServ, err := microservice.NewApiWithViper(microservice.WithAPI(router.GetApis()...))
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
+			return
 		}
 		microservice.RunService(apiServ)
 	},
