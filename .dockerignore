@@ -1,0 +1,6 @@
+.aws
+.docker/
+.notifaction.yaml
+.temp.yaml
+.git/
+.docker-compose/

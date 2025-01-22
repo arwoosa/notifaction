@@ -1,7 +1,7 @@
 service: notification
 
 api:
-  port: 6721
+  port: 9080
   debug: true
 
 

@@ -27,3 +27,4 @@ go.work.sum
 temp.yaml
 
 packages/*
+.DS_Store
