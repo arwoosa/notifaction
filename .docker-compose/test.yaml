@@ -9,8 +9,8 @@ services:
     container_name: oosa_notify
     image: arwoosa/notifaction:test
     restart: always
-    volumes:
-    - ./.aws:/etc/aws
+    volumes: 
+      - $HOME/goproject/arwoosa/secrets/.aws:/etc/aws
     environment:
       - aws.ses.credentials.filename=/etc/aws/credentials
       - aws.ses.from="\"OOSA Test Group\" <developer@arwork.tw>"

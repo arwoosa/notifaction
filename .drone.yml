@@ -13,13 +13,9 @@ steps:
   - make docker IMAGE_TAG=test
 - name: restart service
   commands:
-  - mkdir ./.aws && echo "$AWS_CREDENTIALS_CONTENT" > ./.aws/credentials && chmod 600 ./.aws/credentials
   - docker compose -f .docker-compose/test.yaml down
   - docker compose -f .docker-compose/test.yaml up -d
   - docker image prune -f
-  environment:
-    AWS_CREDENTIALS_CONTENT:
-      from_secret: aws_credentials
 
 trigger:
   branch:
