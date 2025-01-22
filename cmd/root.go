@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/arwoosa/notifaction/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -57,7 +58,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $PWD/.notifaction.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $PWD/.notifaction.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -93,4 +94,8 @@ func errorHandler(err error) {
 		log.Fatal(err)
 		os.Exit(1)
 	}
+}
+
+func showInfo() {
+	fmt.Println("Date:", config.Date, "Commit:", config.Commit)
 }
