@@ -9,7 +9,7 @@ WORKDIR /go/src/github.com/arwoosa/${APP_NAME}
 # Copy everything from the current directory to the PWD(Present Working Directory) inside the container
 COPY . .
 
-ENV GO111MODULE on
+ENV GO111MODULE=on
 # Download all the dependencies
 RUN go mod download -x
 
