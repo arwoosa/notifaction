@@ -10,6 +10,7 @@ platform:
 steps:
 - name: check-golangci
   commands:
+  - export PATH=$PATH:/opt/homebrew/bin
   - make check-golangci
 - name: check-code-coverage
   commands:
