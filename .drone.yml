@@ -14,6 +14,7 @@ steps:
   - make check-golangci
 - name: check-code-coverage
   commands:
+  - export PATH=$PATH:$GOPATH/bin
   - make check-coverage
 - name: build-docker-image
   commands:
