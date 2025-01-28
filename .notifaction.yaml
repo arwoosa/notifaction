@@ -9,6 +9,8 @@ log:
   level: debug
   target: os
 
+mail:
+  provider: aws
 
 aws:
   ses:

@@ -9,8 +9,8 @@ import (
 	"github.com/94peter/microservice/apitool/err"
 	"github.com/arwoosa/notifaction/router/request"
 	"github.com/arwoosa/notifaction/service"
-	"github.com/arwoosa/notifaction/service/factory"
 	"github.com/arwoosa/notifaction/service/identity"
+	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/gin-gonic/gin"
 )
 
@@ -39,7 +39,7 @@ func (m *notification) createNotification(c *gin.Context) {
 		m.GinErrorWithStatusHandler(c, http.StatusBadRequest, err)
 		return
 	}
-	sender, err := factory.NewSender(factory.Sender_MAIL_AWS)
+	sender, err := factory.NewApiSender()
 	if err != nil {
 		m.GinErrorHandler(c, err)
 		return

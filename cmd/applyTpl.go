@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/arwoosa/notifaction/service/mail"
+	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ to quickly create a Cobra application.`,
 		fmt.Println("applyTpl called")
 		file, err := cmd.Flags().GetString("file")
 		errorHandler(err)
-		mailTpl, err := mail.NewTemplateWithAWS()
+		mailTpl, err := factory.NewTemplate()
 		errorHandler(err)
 		err = mailTpl.Apply(file)
 		errorHandler(err)

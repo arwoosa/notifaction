@@ -20,7 +20,7 @@ ARG BUILD_DATE
 # Install compile daemon for hot reloading
 # RUN go install -mod=mod github.com/githubnemo/CompileDaemon
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
--ldflags "-X 'github.com/arwoosa/notifaction/config.Commit=${COMMIT}' -X 'github.com/arwoosa/notifaction/config.Date=${BUILD_DATE}'" \
+-ldflags "-X 'github.com/arwoosa/${APP_NAME}/config.Commit=${COMMIT}' -X 'github.com/arwoosa/${APP_NAME}/config.Date=${BUILD_DATE}'" \
 -o /${APP_NAME} .
 
 FROM gcr.io/distroless/static-debian11

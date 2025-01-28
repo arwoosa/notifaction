@@ -8,6 +8,12 @@ platform:
   arch: amd64
 
 steps:
+- name: check-golangci
+  commands:
+  - make check-golangci
+- name: check-code-coverage
+  commands:
+  - make check-coverage
 - name: build-docker-image
   commands:
   - make docker IMAGE_TAG=test

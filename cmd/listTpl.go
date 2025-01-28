@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/arwoosa/notifaction/service/mail"
+	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ to quickly create a Cobra application.`,
 		fmt.Println()
 		nextToken, err := cmd.Flags().GetString("next-token")
 		errorHandler(err)
-		mailTpl, err := mail.NewTemplateWithAWS()
+		mailTpl, err := factory.NewTemplate()
 		errorHandler(err)
 		result, err := mailTpl.List(nextToken)
 		errorHandler(err)

@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/arwoosa/notifaction/service/mail"
+	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/spf13/cobra"
 )
 
@@ -28,11 +28,11 @@ to quickly create a Cobra application.`,
 			fmt.Println("name is required")
 			return
 		}
-		mailTpl, err := mail.NewTemplateWithAWS()
+		mailTpl, err := factory.NewTemplate()
 		errorHandler(err)
 		err = mailTpl.Delete(name)
 		errorHandler(err)
-		fmt.Println("sucess")
+		fmt.Println("success")
 	},
 }
 
