@@ -38,12 +38,21 @@ type ApplyTemplateInput struct {
 }
 
 func (a *ApplyTemplateInput) Validate() error {
-	// TODO: complete
-	fmt.Println("template event:", a.Event)
-	fmt.Println("template lang:", a.Lang)
-	fmt.Println("subject:", a.Subject)
-	fmt.Println("body (HTML):\n", a.Body.Html)
-	fmt.Println("body (Plaint):\n", a.Body.Plaint)
+	if a.Event == "" {
+		return fmt.Errorf("event is required")
+	}
+
+	if a.Lang == "" {
+		return fmt.Errorf("lang is required")
+	}
+
+	if a.Subject == "" {
+		return fmt.Errorf("subject is required")
+	}
+
+	if a.Body.Plaint == "" && a.Body.Html == "" {
+		return fmt.Errorf("body.plaint or body.html is required")
+	}
 	return nil
 }
 
