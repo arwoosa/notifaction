@@ -1,0 +1,123 @@
+name: go-code-coverage
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      
+      - name: test
+        env:
+          GITHUB_TOKEN: ${{ matrix.os == 'ubuntu-latest' && secrets.GITHUB_TOKEN || '' }} # Needed for GitHub badge storer integration test
+        run: go test -race -count=1 -failfast -shuffle=on -coverprofile=${{ matrix.os }}-profile -covermode=atomic -coverpkg=./... ./... 
+
+      - name: upload cover profile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-profile
+          path: ${{ matrix.os }}-profile
+          if-no-files-found: error
+  check-coverage:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: download ubuntu-latest-profile
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-latest-profile
+      - name: download macos-latest-profile
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-latest-profile
+      - name: download windows-latest-profile
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-latest-profile
+  
+      - name: download artifact (main.breakdown)
+        id: download-main-breakdown
+        uses: dawidd6/action-download-artifact@v8
+        with:
+          branch: main
+          workflow_conclusion: success
+          name: main.breakdown
+          if_no_artifact_found: fail
+
+      - name: check test coverage
+        id: coverage
+        uses: vladopajic/go-test-coverage@v2
+        continue-on-error: true # Should fail after coverage comment is posted
+        with:
+          config: ./.github/.testcoverage.yml
+          profile: ubuntu-latest-profile,macos-latest-profile,windows-latest-profile
+          git-branch: badges
+          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+          breakdown-file-name: ${{ github.ref_name == 'main' && 'main.breakdown' || '' }}
+          diff-base-breakdown-file-name: ${{ steps.download-main-breakdown.outputs.found_artifact == 'true' && 'main.breakdown' || '' }}
+ 
+      - name: upload artifact (main.breakdown)
+        uses: actions/upload-artifact@v4
+        if: github.ref_name == 'main'
+        with:
+          name: main.breakdown
+          path: main.breakdown
+          if-no-files-found: error
+
+      # Post coverage report as comment
+      - name: find pull request ID
+        run: |
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.ref_name }}&state=open")
+          PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
+          
+          if [ "$PR_ID" != "null" ]; then
+            echo "pull_request_id=$PR_ID" >> $GITHUB_ENV
+          else
+            echo "No open pull request found for this branch."
+          fi
+      - name: find if coverage report is already present
+        if: env.pull_request_id
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ env.pull_request_id }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'go-test-coverage report:'
+      - name: post coverage report
+        if: env.pull_request_id
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ env.pull_request_id }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            go-test-coverage report:
+            ```
+            ${{ fromJSON(steps.coverage.outputs.report) }}```
+      
+      - name: "finally check coverage"
+        if: steps.coverage.outcome == 'failure'
+        shell: bash
+        run: echo "coverage check failed" && exit 1
