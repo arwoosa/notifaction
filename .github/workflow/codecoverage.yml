@@ -1,8 +1,6 @@
 name: go-code-coverage
 
-on:
-  pull_request:
-    branches: [ main, dev ]
+on: [pull_request]
 
 permissions:
   contents: write
