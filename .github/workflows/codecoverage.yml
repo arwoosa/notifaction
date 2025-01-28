@@ -42,9 +42,6 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: List available artifacts (debugging)
-        run: ls -alR ${{ github.workspace }}
-        
       - name: download ubuntu-latest-profile
         uses: actions/download-artifact@v4
         with:
@@ -53,16 +50,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-latest-profile
-      
-  
-      - name: download artifact (main.breakdown)
-        id: download-main-breakdown
-        uses: dawidd6/action-download-artifact@v8
-        with:
-          branch: main
-          workflow_conclusion: success
-          name: main.breakdown
-          if_no_artifact_found: fail
 
       - name: check test coverage
         id: coverage
