@@ -57,7 +57,7 @@ jobs:
         continue-on-error: true # Should fail after coverage comment is posted
         with:
           config: ./.testcoverage.yml
-          profile: ubuntu-latest-profile,macos-latest-profile,windows-latest-profile
+          profile: ubuntu-latest-profile,macos-latest-profile
           git-branch: badges
           git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
           breakdown-file-name: ${{ github.ref_name == 'main' && 'main.breakdown' || '' }}
