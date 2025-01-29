@@ -83,6 +83,12 @@ jobs:
           PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.actor }}:${{ github.head_ref }}&state=open")
           PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
+
+          if [ "$PR_ID" == "null" ]; then
+            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.head_ref }}&state=open")
+            PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
+          fi
           
           if [ "$PR_ID" != "null" ]; then
             echo "pull_request_id=$PR_ID" >> $GITHUB_ENV
