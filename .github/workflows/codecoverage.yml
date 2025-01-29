@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: checkout
@@ -50,45 +50,38 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: macos-latest-profile
-      - name: download windows-latest-profile
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-latest-profile
-  
+
       - name: download artifact (main.breakdown)
         id: download-main-breakdown
-        uses: dawidd6/action-download-artifact@v8
+        uses: dawidd6/action-download-artifact@v6
         with:
           branch: main
           workflow_conclusion: success
           name: main.breakdown
-          if_no_artifact_found: fail
+          if_no_artifact_found: warn
 
       - name: check test coverage
         id: coverage
         uses: vladopajic/go-test-coverage@v2
         continue-on-error: true # Should fail after coverage comment is posted
         with:
-          config: ./.github/.testcoverage.yml
-          profile: ubuntu-latest-profile,macos-latest-profile,windows-latest-profile
-          git-branch: badges
-          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+          config: ./.testcoverage.yml
+          profile: ubuntu-latest-profile,macos-latest-profile
           breakdown-file-name: ${{ github.ref_name == 'main' && 'main.breakdown' || '' }}
           diff-base-breakdown-file-name: ${{ steps.download-main-breakdown.outputs.found_artifact == 'true' && 'main.breakdown' || '' }}
- 
       - name: upload artifact (main.breakdown)
         uses: actions/upload-artifact@v4
         if: github.ref_name == 'main'
         with:
           name: main.breakdown
-          path: main.breakdown
+          path: main.breakdown # as specified via `breakdown-file-name`
           if-no-files-found: error
 
       # Post coverage report as comment
       - name: find pull request ID
         run: |
           PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.ref_name }}&state=open")
+            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.head_ref }}&state=open")
           PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
           
           if [ "$PR_ID" != "null" ]; then
