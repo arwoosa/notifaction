@@ -47,27 +47,56 @@ func (c *classificationLang) add(lang string, info *service.Info) {
 type Identity interface {
 	// return notify info and classification by lang
 	SubToInfo(from string, to []string) (*classificationLang, error)
+	service.Health
 }
 
-func NewIdentity() (Identity, error) {
+const (
+	identityPath = "/admin/identities"
+	healthPath   = "/admin/health/ready"
+)
+
+type option func(*identityApi)
+
+func WithHttpClient(httpClient myHttpClient) option {
+	return func(i *identityApi) {
+		i.httpClient = httpClient
+	}
+}
+
+func NewIdentity(opts ...option) (Identity, error) {
 	url := viper.GetString("identity.url")
 	if url == "" {
 		return nil, errors.New("identity.url is empty")
 	}
-	return &identityApi{
-		url: url,
-	}, nil
+	api := &identityApi{
+		identityUri: url + identityPath,
+		heathUri:    url + healthPath,
+	}
+
+	for _, opt := range opts {
+		opt(api)
+	}
+
+	if api.httpClient == nil {
+		api.httpClient = &http.Client{
+			Timeout: time.Second * 5,
+		}
+	}
+
+	return api, nil
 }
 
 type identityApi struct {
-	url string
+	httpClient  myHttpClient
+	identityUri string
+	heathUri    string
 }
 
 func (i *identityApi) SubToInfo(from string, to []string) (*classificationLang, error) {
 	if len(to) == 0 {
 		return nil, nil
 	}
-	resp, err := i.fetchData(append(to, from))
+	resp, err := i.fetchIdentityData(append(to, from))
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch data: %w", err)
 	}
@@ -95,23 +124,24 @@ func (i *identityApi) SubToInfo(from string, to []string) (*classificationLang, 
 	return cl, nil
 }
 
-func (i *identityApi) fetchData(sub []string) (dao.FetchIdentityResponse, error) {
+func (i *identityApi) fetchIdentityData(sub []string) (dao.FetchIdentityResponse, error) {
+
 	response := dao.FetchIdentityResponse{}
+	if i.httpClient == nil {
+		return response, errors.New("http client is nil")
+	}
 	// http request to identiy service i.url with params ids = sub and page_size = 100
 	params := url.Values{
 		"ids":       sub,
 		"page_size": {"100"},
 	}
-	req, err := http.NewRequest("GET", i.url, nil)
+	req, err := http.NewRequest("GET", i.identityUri, nil)
 	if err != nil {
 		return response, err
 	}
 	req.URL.RawQuery = params.Encode()
 
-	httpClient := &http.Client{
-		Timeout: time.Second * 5, // set a timeout of 10 seconds
-	}
-	resp, err := httpClient.Do(req)
+	resp, err := i.httpClient.Do(req)
 	if err != nil {
 		return response, err
 	}
@@ -123,4 +153,21 @@ func (i *identityApi) fetchData(sub []string) (dao.FetchIdentityResponse, error)
 	}
 
 	return response, nil
+}
+
+func (i *identityApi) IsReady() (bool, error) {
+	if i.httpClient == nil {
+		return false, errors.New("http client is nil")
+	}
+	req, err := http.NewRequest("GET", i.heathUri, nil)
+	if err != nil {
+		return false, err
+	}
+	resp, err := i.httpClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK, nil
 }

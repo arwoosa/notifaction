@@ -7,5 +7,6 @@ import (
 func GetApis() []apitool.GinAPI {
 	return []apitool.GinAPI{
 		&notification{},
+		&health{},
 	}
 }

@@ -30,3 +30,7 @@ type Info struct {
 type Sender interface {
 	Send(*Notification) (messageId string, err error)
 }
+
+type Health interface {
+	IsReady() (bool, error)
+}

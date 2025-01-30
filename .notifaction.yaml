@@ -21,4 +21,4 @@ aws:
       profile: default
 
 identity:
-  url: http://localhost:4434/admin/identities
+  url: http://localhost:4434
