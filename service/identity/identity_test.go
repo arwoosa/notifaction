@@ -2,11 +2,15 @@ package identity
 
 import (
 	"errors"
+	"io"
 	"net/http"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/arwoosa/notifaction/service"
 	"github.com/spf13/viper"
 )
 
@@ -50,10 +54,21 @@ func TestIsReady(t *testing.T) {
 			expectedResult: false,
 			expectedError:  nil,
 		},
+		{
+			name: "invalid url",
+			httpClient: &mockHttpClient{
+				interDo: func(req *http.Request) (*http.Response, error) {
+					return &http.Response{StatusCode: http.StatusInternalServerError, Body: http.NoBody}, nil
+				},
+			},
+			heathUri:       "http://dddd 	fdadf",
+			expectedResult: false,
+			expectedError:  errors.New(`parse "http://dddd \tfdadf/admin/health/ready": net/url: invalid control character in URL`),
+		},
 	}
-	viper.Set("identity.url", "https://example.com")
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			viper.Set("identity.url", test.heathUri)
 			i, err := NewIdentity(WithHttpClient(test.httpClient))
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -64,6 +79,9 @@ func TestIsReady(t *testing.T) {
 			}
 			if test.expectedError != nil && err.Error() != test.expectedError.Error() {
 				t.Errorf("expected error %v, got %v", test.expectedError, err)
+			}
+			if test.expectedError == nil && err != nil {
+				t.Errorf("expected error is nil, but get err: %v", err)
 			}
 		})
 	}
@@ -118,6 +136,353 @@ func TestNewIdentity(t *testing.T) {
 			}
 			if api.(*identityApi).httpClient.(*http.Client).Timeout != test.wantTimeout {
 				t.Errorf("timeout should be %s, got %s", test.wantTimeout, api.(*identityApi).httpClient.(*http.Client).Timeout)
+			}
+		})
+	}
+}
+
+func TestSubToInfo(t *testing.T) {
+	viper.Reset()
+	tests := []struct {
+		name         string
+		url          string
+		from         string
+		to           []string
+		opts         []option
+		want         *classificationLang
+		wantErr      bool
+		errorContain string
+	}{
+		{
+			name:    "empty to slice",
+			url:     "https://example.com",
+			from:    "from",
+			to:      []string{},
+			wantErr: false,
+			want:    nil,
+		},
+		{
+			name: "non-empty to slice with valid data",
+			url:  "https://example.com",
+			from: "3",
+			to:   []string{"1", "2"},
+			opts: []option{
+				WithHttpClient(newMockHttpClient(func(req *http.Request) (*http.Response, error) {
+					stringReader := strings.NewReader(`[
+						{"id": "1", "state": "active", "traits": {
+							"name": "To1 Name",
+							"email": "to1@example.com",
+							"language": "en"
+						}},
+						{"id": "2", "state": "active", "traits": {
+							"name": "To2 Name",
+							"email": "to2@example.com",
+							"language": "en"
+						}},
+						{"id": "3", "state": "active", "traits": {
+							"name": "from3 Name",
+							"email": "frome3@example.com",
+							"language": "en"
+						}}
+						]`)
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       io.NopCloser(stringReader),
+					}, nil
+				}))},
+			want: &classificationLang{
+				keys: []string{"en"},
+				data: map[string][]*service.Info{
+					"en": {
+						{
+							Sub:    "1",
+							Name:   "To1 Name",
+							Email:  "to1@example.com",
+							Enable: true,
+						},
+						{
+							Sub:    "2",
+							Name:   "To2 Name",
+							Email:  "to2@example.com",
+							Enable: true,
+						},
+					},
+				},
+				From: &service.Info{
+					Sub:    "3",
+					Name:   "from3 Name",
+					Email:  "frome3@example.com",
+					Enable: true,
+				},
+				FromLang: "en",
+			},
+			wantErr: false,
+		},
+		{
+			name: "no body response",
+			url:  "https://example.com",
+			from: "3",
+			to:   []string{"1", "2"},
+			opts: []option{
+				WithHttpClient(newMockHttpClient(func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       http.NoBody,
+					}, nil
+				}))},
+			want:         nil,
+			wantErr:      true,
+			errorContain: "failed to decode response",
+		},
+		{
+			name: "do with error",
+			url:  "https://example.com",
+			from: "3",
+			to:   []string{"1", "2"},
+			opts: []option{
+				WithHttpClient(newMockHttpClient(func(req *http.Request) (*http.Response, error) {
+					return nil, errors.New("any error")
+				}))},
+			want:         nil,
+			wantErr:      true,
+			errorContain: "failed to send request",
+		},
+		{
+			name: "invalid url",
+			url:  "https://exam	ple.com",
+			from: "3",
+			to:   []string{"1", "2"},
+			opts: []option{
+				WithHttpClient(newMockHttpClient(func(req *http.Request) (*http.Response, error) {
+					return nil, errors.New("any error")
+				}))},
+			want:         nil,
+			wantErr:      true,
+			errorContain: "failed to create request",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			viper.Set("identity.url", test.url)
+			i, err := NewIdentity(test.opts...)
+			if err != nil {
+				t.Errorf("NewIdentity() error = %v", err)
+				return
+			}
+			classLang, err := i.SubToInfo(test.from, test.to)
+			if (err != nil) != test.wantErr {
+				t.Errorf("SubToInfo() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if test.wantErr && test.errorContain != "" && !strings.Contains(err.Error(), test.errorContain) {
+				t.Errorf("errors should contain: %s", test.errorContain)
+				return
+			}
+			if classLang == nil {
+				return
+			}
+			if !test.want.isEqual(classLang) {
+				t.Errorf("SubToInfo() got = %v, want %v", classLang, test.want)
+			}
+		})
+	}
+}
+
+func TestIsEqual(t *testing.T) {
+	tests := []struct {
+		name     string
+		c        *classificationLang
+		cc       *classificationLang
+		expected bool
+	}{
+		{
+			name: "identical",
+			c: &classificationLang{
+				keys:     []string{"key1", "key2"},
+				data:     map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
+				From:     &service.Info{Sub: "from"},
+				FromLang: "lang",
+			},
+			cc: &classificationLang{
+				keys:     []string{"key1", "key2"},
+				data:     map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
+				From:     &service.Info{Sub: "from"},
+				FromLang: "lang",
+			},
+			expected: true,
+		},
+		{
+			name: "different lengths",
+			c: &classificationLang{
+				keys: []string{"key1", "key2"},
+			},
+			cc: &classificationLang{
+				keys: []string{"key1"},
+			},
+			expected: false,
+		},
+		{
+			name: "missing key in cc.data",
+			c: &classificationLang{
+				keys: []string{"key1", "key2"},
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
+			},
+			cc: &classificationLang{
+				keys: []string{"key1", "key2"},
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
+			},
+			expected: false,
+		},
+		{
+			name: "different FromLang",
+			c: &classificationLang{
+				FromLang: "lang1",
+			},
+			cc: &classificationLang{
+				FromLang: "lang2",
+			},
+			expected: false,
+		},
+		{
+			name: "different From",
+			c: &classificationLang{
+				From: &service.Info{Sub: "from1"},
+			},
+			cc: &classificationLang{
+				From: &service.Info{Sub: "from2"},
+			},
+			expected: false,
+		},
+		{
+			name: "different data lengths",
+			c: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
+			},
+			cc: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}, {Sub: "sub2"}}},
+			},
+			expected: false,
+		},
+		{
+			name: "different map lengths",
+			c: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
+			},
+			cc: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
+			},
+			expected: false,
+		},
+		{
+			name: "different data values",
+			c: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
+			},
+			cc: &classificationLang{
+				data: map[string][]*service.Info{"key1": {{Sub: "sub2"}}},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.c.isEqual(tt.cc); got != tt.expected {
+				t.Errorf("isEqual() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetLangs(t *testing.T) {
+	tests := []struct {
+		name     string
+		cl       *classificationLang
+		expected []string
+	}{
+		{
+			name:     "empty keys",
+			cl:       &classificationLang{},
+			expected: []string{},
+		},
+		{
+			name:     "single key",
+			cl:       &classificationLang{keys: []string{"lang1"}},
+			expected: []string{"lang1"},
+		},
+		{
+			name:     "multiple keys",
+			cl:       &classificationLang{keys: []string{"lang1", "lang2", "lang3"}},
+			expected: []string{"lang1", "lang2", "lang3"},
+		},
+		{
+			name:     "nil classificationLang",
+			cl:       nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.cl.GetLangs()
+			if !slices.Equal(actual, tt.expected) {
+				t.Errorf("GetLangs() = %v, want %v", actual, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetInfos(t *testing.T) {
+	tests := []struct {
+		name     string
+		cl       *classificationLang
+		lang     string
+		expected []*service.Info
+	}{
+		{
+			name: "existing language",
+			cl: &classificationLang{
+				data: map[string][]*service.Info{
+					"en": {{Sub: "sub1"}, {Sub: "sub2"}},
+				},
+			},
+			lang: "en",
+			expected: []*service.Info{
+				{Sub: "sub1"},
+				{Sub: "sub2"},
+			},
+		},
+		{
+			name: "non-existing language",
+			cl: &classificationLang{
+				data: map[string][]*service.Info{
+					"en": {{Sub: "sub1"}, {Sub: "sub2"}},
+				},
+			},
+			lang:     "fr",
+			expected: nil,
+		},
+		{
+			name:     "nil classificationLang",
+			cl:       nil,
+			lang:     "en",
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.cl.GetInfos(tt.lang)
+			if len(actual) != len(tt.expected) {
+				t.Errorf("GetInfos() = %v, want %v", actual, tt.expected)
+				return
+			}
+			for i, v := range tt.expected {
+				if !reflect.DeepEqual(actual[i], v) {
+					t.Errorf("GetInfos() = %v, want %v", actual, tt.expected)
+					return
+				}
 			}
 		})
 	}
