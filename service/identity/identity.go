@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"time"
 
 	"github.com/arwoosa/notifaction/service"
@@ -20,6 +21,39 @@ type classificationLang struct {
 	FromLang string
 }
 
+func (c *classificationLang) isEqual(cc *classificationLang) bool {
+	if len(c.keys) != len(cc.keys) {
+		return false
+	}
+	for _, k := range c.keys {
+		if _, ok := cc.data[k]; !ok {
+			return false
+		}
+	}
+	if c.FromLang != cc.FromLang {
+		return false
+	}
+	if !reflect.DeepEqual(c.From, cc.From) {
+		return false
+	}
+	if len(c.data) != len(cc.data) {
+		return false
+	}
+
+	for k, v := range c.data {
+		match := cc.data[k]
+		if len(match) != len(v) {
+			return false
+		}
+		for i, vv := range v {
+			if !reflect.DeepEqual(vv, match[i]) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func newClassficationLang() *classificationLang {
 	return &classificationLang{
 		keys: []string{},
@@ -28,10 +62,16 @@ func newClassficationLang() *classificationLang {
 }
 
 func (c *classificationLang) GetLangs() []string {
+	if c == nil {
+		return nil
+	}
 	return c.keys
 }
 
 func (c *classificationLang) GetInfos(lang string) []*service.Info {
+	if c == nil {
+		return nil
+	}
 	return c.data[lang]
 }
 
@@ -127,9 +167,6 @@ func (i *identityApi) SubToInfo(from string, to []string) (*classificationLang, 
 func (i *identityApi) fetchIdentityData(sub []string) (dao.FetchIdentityResponse, error) {
 
 	response := dao.FetchIdentityResponse{}
-	if i.httpClient == nil {
-		return response, errors.New("http client is nil")
-	}
 	// http request to identiy service i.url with params ids = sub and page_size = 100
 	params := url.Values{
 		"ids":       sub,
@@ -137,28 +174,25 @@ func (i *identityApi) fetchIdentityData(sub []string) (dao.FetchIdentityResponse
 	}
 	req, err := http.NewRequest("GET", i.identityUri, nil)
 	if err != nil {
-		return response, err
+		return response, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.URL.RawQuery = params.Encode()
 
 	resp, err := i.httpClient.Do(req)
 	if err != nil {
-		return response, err
+		return response, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// bind response to FetchIdentityResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return response, err
+		return response, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return response, nil
 }
 
 func (i *identityApi) IsReady() (bool, error) {
-	if i.httpClient == nil {
-		return false, errors.New("http client is nil")
-	}
 	req, err := http.NewRequest("GET", i.heathUri, nil)
 	if err != nil {
 		return false, err
