@@ -1,12 +1,12 @@
 name: go-code-coverage
 
 on:
-  pull_request:
+  push:
     branches: [ main ]
 
 permissions:
   contents: write
-  pull-requests: write
+  issues: write 
 
 jobs:
   test:
@@ -67,6 +67,8 @@ jobs:
         with:
           config: ./.testcoverage.yml
           profile: ubuntu-latest-profile,macos-latest-profile
+          git-branch: badges
+          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
           breakdown-file-name: ${{ github.ref_name == 'main' && 'main.breakdown' || '' }}
           diff-base-breakdown-file-name: ${{ steps.download-main-breakdown.outputs.found_artifact == 'true' && 'main.breakdown' || '' }}
       - name: upload artifact (main.breakdown)
@@ -76,47 +78,43 @@ jobs:
           name: main.breakdown
           path: main.breakdown # as specified via `breakdown-file-name`
           if-no-files-found: error
-
-      # Post coverage report as comment
-      - name: find pull request ID
-        run: |
-          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.actor }}:${{ github.head_ref }}&state=open")
-          PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
-
-          if [ "$PR_ID" == "null" ]; then
-            PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:${{ github.head_ref }}&state=open")
-            PR_ID=$(echo "$PR_DATA" | jq -r '.[0].number')
-          fi
-          
-          if [ "$PR_ID" != "null" ]; then
-            echo "pull_request_id=$PR_ID" >> $GITHUB_ENV
-          else
-            echo "No open pull request found for this branch."
-          fi
-      - name: find if coverage report is already present
-        if: env.pull_request_id
-        uses: peter-evans/find-comment@v3
-        id: fc
-        with:
-          issue-number: ${{ env.pull_request_id }}
-          comment-author: 'github-actions[bot]'
-          body-includes: 'go-test-coverage report:'
-      - name: post coverage report
-        if: env.pull_request_id
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ env.pull_request_id }}
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          edit-mode: replace
-          body: |
-            go-test-coverage report:
-            ```
-            ${{ fromJSON(steps.coverage.outputs.report) }}```
-      
       - name: "finally check coverage"
         if: steps.coverage.outcome == 'failure'
         shell: bash
         run: echo "coverage check failed" && exit 1
+
+  create-issue-if-job-fails:
+    needs: check-coverage
+    runs-on: ubuntu-latest
+    if: always() && needs.check-coverage.result == 'failure' && github.repository_owner != 'arwoosa'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+    
+      - name: Create Issue
+        uses: dacbd/create-issue-action@main
+        with:
+          token: ${{ github.token }}
+          title: |
+            [${{ github.workflow }}] failed during [${{ github.event_name }}]
+
+          # Auto-assign person who triggered the failure.
+          assignees: ${{ github.actor }},${{ github.triggering_actor }}
+          labels: CICD
+          body: |
+            ## Failure Report:
+            
+            > [!IMPORTANT]
+            > Details on failed run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    
+            - Author: @${{ github.triggering_actor }}
+            - Branch: `${{ github.ref }}`
+            - Commit: ${{ github.sha }}
+            - Workflow Path: `${{ github.workflow_ref }}`
+    
+            - [ ] **Task**: Review failed run, fix the issue(s), and re-run until successful.
+    
+            > This issue was created automatically by GitHub, 
+            > through `dacbd/create-issue-action@main` action
+            > and KemingHe's contribution.
+            > **DO NOT** close this issue until resolved.
