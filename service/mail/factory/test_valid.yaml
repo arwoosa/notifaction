@@ -1,0 +1,6 @@
+event: aaa
+lang: en
+subject: subje
+body:
+  text: text
+  html: html
