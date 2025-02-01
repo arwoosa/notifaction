@@ -26,7 +26,15 @@ type factoryOpt func(*tplImpl)
 
 func WithAllowedDirs(dirs ...string) factoryOpt {
 	return func(a *tplImpl) {
-		a.allowedDirs = dirs
+		allow := make([]string, len(dirs))
+		for i, d := range dirs {
+			path, err := filepath.Abs(d)
+			if err != nil {
+				continue
+			}
+			allow[i] = path
+		}
+		a.allowedDirs = allow
 	}
 }
 
@@ -84,7 +92,7 @@ func (a *tplImpl) Apply(file string) error {
 	}
 	// check file exist
 	if _, err := os.Stat(file); err != nil {
-		return fmt.Errorf("file %s does not exist: %w", file, err)
+		return fmt.Errorf("file %s does not exist", file)
 	}
 
 	// read file
