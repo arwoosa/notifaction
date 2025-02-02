@@ -10,6 +10,9 @@ type CreateNotification struct {
 }
 
 func (r *CreateNotification) Validate() error {
+	if r == nil {
+		return errors.New("nil request")
+	}
 	if len(r.To) == 0 {
 		return errors.New("empty to")
 	}
