@@ -14,14 +14,48 @@ import (
 	"github.com/spf13/viper"
 )
 
-type classificationLang struct {
+type classificationLangOpt func(*ClassificationLang)
+
+func WithClassificationLang(data map[string][]*service.Info) classificationLangOpt {
+	return func(c *ClassificationLang) {
+		c.data = data
+	}
+}
+
+func WithClassificationLangFrom(from *service.Info) classificationLangOpt {
+	return func(c *ClassificationLang) {
+		c.From = from
+	}
+}
+
+func WithClassificationLangFromLang(fromLang string) classificationLangOpt {
+	return func(c *ClassificationLang) {
+		c.FromLang = fromLang
+	}
+}
+
+func WithClassificationLangKeys(keys []string) classificationLangOpt {
+	return func(c *ClassificationLang) {
+		c.keys = keys
+	}
+}
+
+func NewClassificationLang(opts ...classificationLangOpt) *ClassificationLang {
+	c := newClassficationLang()
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+type ClassificationLang struct {
 	keys     []string
 	data     map[string][]*service.Info
 	From     *service.Info
 	FromLang string
 }
 
-func (c *classificationLang) isEqual(cc *classificationLang) bool {
+func (c *ClassificationLang) isEqual(cc *ClassificationLang) bool {
 	if len(c.keys) != len(cc.keys) {
 		return false
 	}
@@ -54,28 +88,28 @@ func (c *classificationLang) isEqual(cc *classificationLang) bool {
 	return true
 }
 
-func newClassficationLang() *classificationLang {
-	return &classificationLang{
+func newClassficationLang() *ClassificationLang {
+	return &ClassificationLang{
 		keys: []string{},
 		data: map[string][]*service.Info{},
 	}
 }
 
-func (c *classificationLang) GetLangs() []string {
+func (c *ClassificationLang) GetLangs() []string {
 	if c == nil {
 		return nil
 	}
 	return c.keys
 }
 
-func (c *classificationLang) GetInfos(lang string) []*service.Info {
+func (c *ClassificationLang) GetInfos(lang string) []*service.Info {
 	if c == nil {
 		return nil
 	}
 	return c.data[lang]
 }
 
-func (c *classificationLang) add(lang string, info *service.Info) {
+func (c *ClassificationLang) add(lang string, info *service.Info) {
 	if infos, ok := c.data[lang]; ok {
 		c.data[lang] = append(infos, info)
 	} else {
@@ -86,7 +120,7 @@ func (c *classificationLang) add(lang string, info *service.Info) {
 
 type Identity interface {
 	// return notify info and classification by lang
-	SubToInfo(from string, to []string) (*classificationLang, error)
+	SubToInfo(from string, to []string) (*ClassificationLang, error)
 	service.Health
 }
 
@@ -104,6 +138,9 @@ func WithHttpClient(httpClient myHttpClient) option {
 }
 
 func NewIdentity(opts ...option) (Identity, error) {
+	if mockIdentity != nil {
+		return newMockIdentity()
+	}
 	url := viper.GetString("identity.url")
 	if url == "" {
 		return nil, errors.New("identity.url is empty")
@@ -132,7 +169,7 @@ type identityApi struct {
 	heathUri    string
 }
 
-func (i *identityApi) SubToInfo(from string, to []string) (*classificationLang, error) {
+func (i *identityApi) SubToInfo(from string, to []string) (*ClassificationLang, error) {
 	if len(to) == 0 {
 		return nil, nil
 	}

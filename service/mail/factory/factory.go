@@ -15,6 +15,9 @@ import (
 )
 
 func NewApiSender() (mail.ApiSender, error) {
+	if mockSendor != nil {
+		return newMockSender()
+	}
 	provider := viper.GetString("mail.provider")
 	if provider == "aws" {
 		return aws.NewApiSender()
@@ -39,6 +42,9 @@ func WithAllowedDirs(dirs ...string) factoryOpt {
 }
 
 func NewTemplate(opts ...factoryOpt) (mail.Template, error) {
+	if mockTemplate != nil {
+		return newMockTemplate()
+	}
 	tplImpl := &tplImpl{}
 	for _, opt := range opts {
 		opt(tplImpl)
