@@ -80,10 +80,12 @@ func (m *notification) createNotification(c *gin.Context) {
 		c.JSON(http.StatusAccepted, gin.H{})
 		return
 	}
+
 	if len(errSends) == len(requestBody.To) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": errSends[0].err.Error(),
 		})
+		return
 	}
 
 	errorResp := make([]gin.H, len(errSends))

@@ -149,7 +149,7 @@ func TestSubToInfo(t *testing.T) {
 		from         string
 		to           []string
 		opts         []option
-		want         *classificationLang
+		want         *ClassificationLang
 		wantErr      bool
 		errorContain string
 	}{
@@ -190,7 +190,7 @@ func TestSubToInfo(t *testing.T) {
 						Body:       io.NopCloser(stringReader),
 					}, nil
 				}))},
-			want: &classificationLang{
+			want: &ClassificationLang{
 				keys: []string{"en"},
 				data: map[string][]*service.Info{
 					"en": {
@@ -292,19 +292,19 @@ func TestSubToInfo(t *testing.T) {
 func TestIsEqual(t *testing.T) {
 	tests := []struct {
 		name     string
-		c        *classificationLang
-		cc       *classificationLang
+		c        *ClassificationLang
+		cc       *ClassificationLang
 		expected bool
 	}{
 		{
 			name: "identical",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				keys:     []string{"key1", "key2"},
 				data:     map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
 				From:     &service.Info{Sub: "from"},
 				FromLang: "lang",
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				keys:     []string{"key1", "key2"},
 				data:     map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
 				From:     &service.Info{Sub: "from"},
@@ -314,21 +314,21 @@ func TestIsEqual(t *testing.T) {
 		},
 		{
 			name: "different lengths",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				keys: []string{"key1", "key2"},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				keys: []string{"key1"},
 			},
 			expected: false,
 		},
 		{
 			name: "missing key in cc.data",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				keys: []string{"key1", "key2"},
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				keys: []string{"key1", "key2"},
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
 			},
@@ -336,50 +336,50 @@ func TestIsEqual(t *testing.T) {
 		},
 		{
 			name: "different FromLang",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				FromLang: "lang1",
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				FromLang: "lang2",
 			},
 			expected: false,
 		},
 		{
 			name: "different From",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				From: &service.Info{Sub: "from1"},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				From: &service.Info{Sub: "from2"},
 			},
 			expected: false,
 		},
 		{
 			name: "different data lengths",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}, {Sub: "sub2"}}},
 			},
 			expected: false,
 		},
 		{
 			name: "different map lengths",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}, "key2": {{Sub: "sub2"}}},
 			},
 			expected: false,
 		},
 		{
 			name: "different data values",
-			c: &classificationLang{
+			c: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub1"}}},
 			},
-			cc: &classificationLang{
+			cc: &ClassificationLang{
 				data: map[string][]*service.Info{"key1": {{Sub: "sub2"}}},
 			},
 			expected: false,
@@ -398,26 +398,26 @@ func TestIsEqual(t *testing.T) {
 func TestGetLangs(t *testing.T) {
 	tests := []struct {
 		name     string
-		cl       *classificationLang
+		cl       *ClassificationLang
 		expected []string
 	}{
 		{
 			name:     "empty keys",
-			cl:       &classificationLang{},
+			cl:       &ClassificationLang{},
 			expected: []string{},
 		},
 		{
 			name:     "single key",
-			cl:       &classificationLang{keys: []string{"lang1"}},
+			cl:       &ClassificationLang{keys: []string{"lang1"}},
 			expected: []string{"lang1"},
 		},
 		{
 			name:     "multiple keys",
-			cl:       &classificationLang{keys: []string{"lang1", "lang2", "lang3"}},
+			cl:       &ClassificationLang{keys: []string{"lang1", "lang2", "lang3"}},
 			expected: []string{"lang1", "lang2", "lang3"},
 		},
 		{
-			name:     "nil classificationLang",
+			name:     "nil ClassificationLang",
 			cl:       nil,
 			expected: nil,
 		},
@@ -436,13 +436,13 @@ func TestGetLangs(t *testing.T) {
 func TestGetInfos(t *testing.T) {
 	tests := []struct {
 		name     string
-		cl       *classificationLang
+		cl       *ClassificationLang
 		lang     string
 		expected []*service.Info
 	}{
 		{
 			name: "existing language",
-			cl: &classificationLang{
+			cl: &ClassificationLang{
 				data: map[string][]*service.Info{
 					"en": {{Sub: "sub1"}, {Sub: "sub2"}},
 				},
@@ -455,7 +455,7 @@ func TestGetInfos(t *testing.T) {
 		},
 		{
 			name: "non-existing language",
-			cl: &classificationLang{
+			cl: &ClassificationLang{
 				data: map[string][]*service.Info{
 					"en": {{Sub: "sub1"}, {Sub: "sub2"}},
 				},
@@ -464,7 +464,7 @@ func TestGetInfos(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:     "nil classificationLang",
+			name:     "nil ClassificationLang",
 			cl:       nil,
 			lang:     "en",
 			expected: nil,
