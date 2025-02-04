@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/94peter/microservice/apitool"
@@ -17,13 +18,15 @@ import (
 	"github.com/arwoosa/notifaction/service/mail/dao"
 	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetApis(t *testing.T) {
 	tests := []struct {
-		name string
-		want []apitool.GinAPI
+		name    string
+		want    []apitool.GinAPI
+		prefunc func()
 	}{
 		{
 			name: "test GetApis",
@@ -32,9 +35,24 @@ func TestGetApis(t *testing.T) {
 				&health{},
 			},
 		},
+		{
+			name: "test GetApis with test api",
+			want: []apitool.GinAPI{
+				&notification{},
+				&health{},
+				&test{},
+			},
+			prefunc: func() {
+				viper.Set("api.test", true)
+			},
+		},
 	}
 
 	for _, tt := range tests {
+		viper.Reset()
+		if tt.prefunc != nil {
+			tt.prefunc()
+		}
 		t.Run(tt.name, func(t *testing.T) {
 			got := GetApis()
 			if len(got) != len(tt.want) {
@@ -294,7 +312,6 @@ func TestCreateNotification(t *testing.T) {
 				), nil
 			},
 			mockSender: func(msg *service.Notification) (messageId string, err error) {
-				fmt.Println("msg", msg.Event, msg.From.Sub, msg.SendTo[0].Sub)
 				if msg.SendTo[0].Sub == "fail" {
 					return "", errors.New("send error")
 				}
@@ -364,4 +381,78 @@ func TestCreateNotification(t *testing.T) {
 			assert.Equal(t, test.statusCode, w.Code)
 		})
 	}
+}
+
+func TestGetHandlers(t *testing.T) {
+	m := &test{}
+
+	handlers := m.GetHandlers()
+
+	// Test that the function returns a non-empty slice of handlers
+	if len(handlers) == 0 {
+		t.Errorf("expected at least one handler, got 0")
+	}
+
+	// Test that the returned handler has the correct path, method, and handler function
+	if handlers[0].Path != "/test/header2post" || handlers[0].Method != "POST" {
+		t.Errorf("expected handler with path '/test/header2post', method 'POST', and handler 'testHeader2Post', got %+v", handlers[0])
+	}
+}
+
+func TestTestHeader2Post(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       string
+		statusCode int
+		header     string
+	}{
+		{
+			name:       "success",
+			body:       "Hello, World!",
+			statusCode: http.StatusOK,
+			header:     "SGVsbG8sIFdvcmxkIQ==",
+		},
+		{
+			name:       "invalid body",
+			body:       "",
+			statusCode: http.StatusInternalServerError,
+			header:     "",
+		},
+	}
+	const testPath = "/test/header2post"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			if tt.body != "" {
+				c.Request = httptest.NewRequest("POST", testPath, strings.NewReader(tt.body))
+			} else {
+				c.Request = httptest.NewRequest("POST", testPath, errReader(0))
+			}
+
+			m := &test{}
+			m.SetErrorHandler(func(c *gin.Context, err error) {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+			})
+			m.testHeader2Post(c)
+
+			if w.Code != tt.statusCode {
+				t.Errorf("expected status code %d, got %d", tt.statusCode, w.Code)
+			}
+
+			if tt.header != "" {
+				if headerValue := w.Header().Get("X-Notify"); headerValue != tt.header {
+					t.Errorf("expected header value %q, got %q", tt.header, headerValue)
+				}
+			}
+		})
+	}
+}
+
+type errReader int
+
+func (errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("test error")
 }

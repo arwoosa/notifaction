@@ -68,6 +68,8 @@ type awsApiSender struct {
 	from     string
 }
 
+const addressTpl = `"%s" <%s>`
+
 func (a *awsApiSender) Send(notify *service.Notification) (string, error) {
 	dataJson, err := json.Marshal(notify.Data)
 	if err != nil {
@@ -75,7 +77,7 @@ func (a *awsApiSender) Send(notify *service.Notification) (string, error) {
 	}
 	addresses := make([]*string, len(notify.SendTo))
 	for i, s := range notify.SendTo {
-		addresses[i] = aws.String(s.Email)
+		addresses[i] = aws.String(fmt.Sprintf(addressTpl, s.Name, s.Email))
 	}
 	tplName := notify.GetTemplateName()
 

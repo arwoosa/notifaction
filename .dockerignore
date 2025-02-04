@@ -3,3 +3,4 @@
 .temp.yaml
 .git/
 .docker-compose/
+apply.yaml

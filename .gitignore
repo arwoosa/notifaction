@@ -28,3 +28,5 @@ temp.yaml
 
 packages/*
 .DS_Store
+
+apply.yaml

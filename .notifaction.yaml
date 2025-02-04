@@ -3,6 +3,7 @@ service: notification
 api:
   port: 9080
   debug: true
+  test: true
 
 
 log:
@@ -14,10 +15,10 @@ mail:
 
 aws:
   ses:
-    from: "\"OOSA Group\" <developer@arwork.tw>"
+    from: "\"OOSA Group\" <developer@oosa.life>"
     region: ap-northeast-1
     credentails:
-      filename: ./.aws/credentials
+      filename: /Users/peter/Codes/oosa/secrets/.aws/credentails
       profile: default
 
 identity:

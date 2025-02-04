@@ -1,5 +1,5 @@
 networks:
-  oosa-network:
+  default:
     external: true
     name: network.oosa
 
@@ -10,10 +10,20 @@ services:
     image: arwoosa/notifaction:test
     restart: always
     volumes: 
-      - $HOME/goproject/arwoosa/secrets/.aws:/etc/aws
+      - $HOME/Codes/oosa/secrets/.aws:/etc/aws
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.notify.loadbalancer.server.port=9080
+      - traefik.http.routers.notify.rule=Host(`notify.oosa.docker`)
+      - traefik.http.routers.notify.entrypoints=web
+      - traefik.http.routers.notify.service=notify
+      - traefik.http.middlewares.notify_mid.plugin.header2post.notifyheader=X-Notify
+      - traefik.http.middlewares.notify_mid.plugin.header2post.notifyurl=http://oosa_notify:9080/notification
+      - traefik.http.routers.notify.middlewares=notify_mid
     environment:
-      - AWS_SES_CREDENTAILS_FILENAME=/etc/aws/credentials
-      - AWS_SES_FROM="\"OOSA Test Group\" <developer@arwork.tw>"
-      - IDENTITY_URL=http://kratos:4434/admin/identities
-    networks:
-    - oosa-network
+      - AWS_SES_CREDENTAILS_FILENAME=/etc/aws/credentails
+      - AWS_SES_FROM="OOSA Test Group" <no-apply@oosa.life>
+      - IDENTITY_URL=http://kratos:4434
+      - API_TEST=true
+    ports:
+    - "9080:9080"
