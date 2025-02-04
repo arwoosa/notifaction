@@ -93,18 +93,22 @@ func (a *tplImpl) isFileAllowed(file string) bool {
 }
 
 func (a *tplImpl) Apply(file string) error {
-	if !a.isFileAllowed(filepath.Clean(file)) {
+	absFile, err := filepath.Abs(file)
+	if err != nil {
+		return err
+	}
+	if !a.isFileAllowed(absFile) {
 		return errors.New("file is not in allowed dir: " + strings.Join(a.allowedDirs, ", "))
 	}
 	// check file exist
-	if _, err := os.Stat(file); err != nil {
+	if _, err := os.Stat(absFile); err != nil {
 		return fmt.Errorf("file %s does not exist", file)
 	}
 
 	// read file
-	data, err := os.ReadFile(file)
+	data, err := os.ReadFile(filepath.Clean(absFile))
 	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", file, err)
+		return fmt.Errorf("failed to read file %s: %w", absFile, err)
 	}
 	// yaml unmarshal
 	var tplDao dao.ApplyTemplateInput
