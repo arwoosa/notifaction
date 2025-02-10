@@ -9,6 +9,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
+	go.mongodb.org/mongo-driver v1.17.2
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	gopkg.in/yaml.v2 v2.4.0
 )
