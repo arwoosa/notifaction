@@ -10,7 +10,7 @@ services:
     image: arwoosa/notifaction:test
     restart: always
     volumes: 
-      - $HOME/Codes/oosa/secrets/.aws:/etc/aws
+      - $HOME/goproject/arwoosa/secrets/.aws:/etc/aws
     labels:
       - traefik.enable=true
       - traefik.http.services.notify.loadbalancer.server.port=9080
