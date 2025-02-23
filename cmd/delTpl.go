@@ -13,13 +13,9 @@ import (
 // createTplCmd represents the createTpl command
 var delTplCmd = &cobra.Command{
 	Use:   "delTpl",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Delete an email template from AWS SES",
+	Long: `Deletes a specified email template from AWS SES.
+This command checks if the given template exists; if so, it removes it.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("delTpl called")
 		name, err := cmd.Flags().GetString("name")
