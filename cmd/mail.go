@@ -12,13 +12,11 @@ import (
 // mailCmd represents the mail command
 var mailCmd = &cobra.Command{
 	Use:   "mail",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Manage AWS SES email templates",
+	Long: `The mail command provides a set of subcommands to manage email templates in AWS SES.
+It supports applying templates from a YAML file (applyTpl), deleting existing templates (delTpl),
+and listing all stored templates with pagination support (listTpl). Use these subcommands to seamlessly
+create, update, remove, or query email templates in your AWS SES environment.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("mail called")
 	},

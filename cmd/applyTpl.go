@@ -13,13 +13,10 @@ import (
 // createTplCmd represents the createTpl command
 var applyTplCmd = &cobra.Command{
 	Use:   "applyTpl",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Apply an email template from a YAML file to AWS SES",
+	Long: `Reads a specified YAML file, validates the email template, 
+and applies it to AWS SES. If the template already exists, it will be updated; 
+otherwise, a new template will be created.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("applyTpl called")
 		file, err := cmd.Flags().GetString("file")

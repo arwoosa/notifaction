@@ -16,13 +16,10 @@ import (
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Start the API service based on the configuration",
+	Long: `The serve command starts the API service that provides email sending functionality to users.
+It initializes the necessary APIs (e.g., notification, health check).
+Additionally, it can run a test API for local development to simulate API requests from other microservices.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showInfo()
 		fmt.Println("serve called", viper.GetString("service"))

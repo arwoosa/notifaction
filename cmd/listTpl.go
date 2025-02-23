@@ -14,13 +14,10 @@ import (
 // createTplCmd represents the createTpl command
 var listTplCmd = &cobra.Command{
 	Use:   "listTpl",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "List email templates from AWS SES",
+	Long: `Lists all email templates stored in AWS SES with their creation times.
+Supports pagination via the --next-token flag, which allows retrieval of subsequent results
+if the number of templates exceeds a single page.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("listTpl called")
 		fmt.Println()
