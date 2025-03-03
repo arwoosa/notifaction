@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Notification struct {
@@ -10,6 +11,14 @@ type Notification struct {
 	Data   map[string]string
 	From   *Info
 	SendTo []*Info
+}
+
+func (n *Notification) UpperKeyData() map[string]string {
+	result := map[string]string{}
+	for k, v := range n.Data {
+		result[strings.ToUpper(k)] = v
+	}
+	return result
 }
 
 func (n *Notification) GetTemplateName() string {
