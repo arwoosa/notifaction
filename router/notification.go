@@ -12,6 +12,7 @@ import (
 	"github.com/arwoosa/notifaction/service/identity"
 	"github.com/arwoosa/notifaction/service/mail/factory"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 type notification struct {
@@ -56,6 +57,13 @@ func (m *notification) createNotification(c *gin.Context) {
 		return
 	}
 	requestBody.Data["FROM"] = cl.From.Name
+	header2data := viper.GetStringSlice("mail.header2data")
+	for _, h := range header2data {
+		if c.Request.Header.Get(h) == "" {
+			continue
+		}
+		requestBody.Data[h] = c.Request.Header.Get(h)
+	}
 	var errSends []sendError
 	for _, lang := range cl.GetLangs() {
 		for i, info := range cl.GetInfos(lang) {

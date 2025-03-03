@@ -1,7 +1,7 @@
 package factory
 
 import (
-	"fmt"
+	"testing"
 
 	"github.com/arwoosa/notifaction/service"
 	"github.com/arwoosa/notifaction/service/mail"
@@ -13,9 +13,20 @@ func ResetMockSender() {
 	mockSendor = nil
 }
 
-func SetMockSender(sendFunc func(msg *service.Notification) (messageId string, err error)) {
+type mockSenderOpt func(*mockSenderImpl)
+
+func WithMockSenderT(t *testing.T) mockSenderOpt {
+	return func(m *mockSenderImpl) {
+		m.t = t
+	}
+}
+
+func SetMockSender(sendFunc func(t *testing.T, msg *service.Notification) (messageId string, err error), opts ...mockSenderOpt) {
 	mock := getMockSender()
 	mock.sendFunc = sendFunc
+	for _, opt := range opts {
+		opt(mock)
+	}
 	mockSendor = mock
 }
 
@@ -36,7 +47,6 @@ func getMockSender() *mockSenderImpl {
 }
 
 func newMockSender() (mail.ApiSender, error) {
-	fmt.Println("newMockSender", mockSendor)
 	if mockSendor == nil {
 		return nil, nil
 	}
@@ -48,13 +58,14 @@ func newMockSender() (mail.ApiSender, error) {
 }
 
 type mockSenderImpl struct {
+	t            *testing.T
 	newException error
-	sendFunc     func(msg *service.Notification) (messageId string, err error)
+	sendFunc     func(t *testing.T, msg *service.Notification) (messageId string, err error)
 }
 
 func (m *mockSenderImpl) Send(msg *service.Notification) (messageId string, err error) {
 	if m.sendFunc != nil {
-		return m.sendFunc(msg)
+		return m.sendFunc(m.t, msg)
 	}
 	return "", nil
 }
