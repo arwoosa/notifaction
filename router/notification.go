@@ -60,6 +60,7 @@ func (m *notification) createNotification(c *gin.Context) {
 	header2data := viper.GetStringSlice("mail.header2data")
 	for _, h := range header2data {
 		if c.Request.Header.Get(h) == "" {
+			requestBody.Data[h] = "missing header: " + h
 			continue
 		}
 		requestBody.Data[h] = c.Request.Header.Get(h)
