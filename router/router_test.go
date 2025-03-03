@@ -514,7 +514,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 				), nil
 			},
 			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
-				assert.Equal(t, "", msg.Data["X-Forwarded-Not-Exist"])
+				assert.Equal(t, "missing header: X-Forwarded-Not-Exist", msg.Data["X-Forwarded-Not-Exist"])
 				return "", nil
 			},
 			statusCode: http.StatusAccepted,
