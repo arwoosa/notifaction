@@ -71,7 +71,7 @@ type awsApiSender struct {
 const addressTpl = `"%s" <%s>`
 
 func (a *awsApiSender) Send(notify *service.Notification) (string, error) {
-	dataJson, err := json.Marshal(notify.Data)
+	dataJson, err := json.Marshal(notify.UpperKeyData())
 	if err != nil {
 		return "", errors.New("failed to marshal data")
 	}
