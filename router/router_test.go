@@ -218,7 +218,7 @@ func TestCreateNotification(t *testing.T) {
 		name                string
 		requestBody         *request.CreateNotification
 		mockSenderException error
-		mockSender          func(msg *service.Notification) (messageId string, err error)
+		mockSender          func(t *testing.T, msg *service.Notification) (messageId string, err error)
 		mockNewIdentityErr  error
 		mockSubToInfo       func(from string, to []string) (*identity.ClassificationLang, error)
 		statusCode          int
@@ -286,7 +286,7 @@ func TestCreateNotification(t *testing.T) {
 					identity.WithClassificationLang(map[string][]*service.Info{"en": {{Sub: "valid"}}}),
 				), nil
 			},
-			mockSender: func(msg *service.Notification) (messageId string, err error) {
+			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
 				return "", errors.New("send error")
 			},
 			statusCode: http.StatusInternalServerError,
@@ -311,7 +311,7 @@ func TestCreateNotification(t *testing.T) {
 					identity.WithClassificationLang(map[string][]*service.Info{"en": tos}),
 				), nil
 			},
-			mockSender: func(msg *service.Notification) (messageId string, err error) {
+			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
 				if msg.SendTo[0].Sub == "fail" {
 					return "", errors.New("send error")
 				}
@@ -455,4 +455,137 @@ type errReader int
 
 func (errReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("test error")
+}
+
+func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
+
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name             string
+		requestBody      *request.CreateNotification
+		header           http.Header
+		forwardedHeaders []string
+		mockSubToInfo    func(from string, to []string) (*identity.ClassificationLang, error)
+		mockSender       func(t *testing.T, msg *service.Notification) (messageId string, err error)
+		statusCode       int
+	}{
+		{
+			name: "not set header forward",
+			requestBody: &request.CreateNotification{
+				To:    []string{"valid"},
+				From:  "fff",
+				Event: "event",
+				Data:  map[string]string{},
+			},
+			header: http.Header{
+				"X-Forwarded-Host": []string{"localhost"},
+			},
+			forwardedHeaders: []string{""},
+			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
+				return identity.NewClassificationLang(
+					identity.WithClassificationLangKeys([]string{"en"}),
+					identity.WithClassificationLangFrom(&service.Info{Sub: "valid"}),
+					identity.WithClassificationLangFromLang("en"),
+					identity.WithClassificationLang(map[string][]*service.Info{"en": {{Sub: "valid"}}}),
+				), nil
+			},
+			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
+				assert.Equal(t, "", msg.Data["X-Forwarded-Host"])
+				return "", nil
+			},
+			statusCode: http.StatusAccepted,
+		},
+		{
+			name: "header not exist",
+			requestBody: &request.CreateNotification{
+				To:    []string{"valid"},
+				From:  "fff",
+				Event: "event",
+				Data:  map[string]string{},
+			},
+			forwardedHeaders: []string{"X-Forwarded-Not-Exist"},
+			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
+				return identity.NewClassificationLang(
+					identity.WithClassificationLangKeys([]string{"en"}),
+					identity.WithClassificationLangFrom(&service.Info{Sub: "valid"}),
+					identity.WithClassificationLangFromLang("en"),
+					identity.WithClassificationLang(map[string][]*service.Info{"en": {{Sub: "valid"}}}),
+				), nil
+			},
+			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
+				assert.Equal(t, "", msg.Data["X-Forwarded-Not-Exist"])
+				return "", nil
+			},
+			statusCode: http.StatusAccepted,
+		},
+		{
+			name: "header exist",
+			requestBody: &request.CreateNotification{
+				To:    []string{"valid"},
+				From:  "fff",
+				Event: "event",
+				Data:  map[string]string{},
+			},
+			header: http.Header{
+				"X-Forwarded-Host": []string{"localhost"},
+			},
+			forwardedHeaders: []string{"X-Forwarded-Host"},
+			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
+				return identity.NewClassificationLang(
+					identity.WithClassificationLangKeys([]string{"en"}),
+					identity.WithClassificationLangFrom(&service.Info{Sub: "valid"}),
+					identity.WithClassificationLangFromLang("en"),
+					identity.WithClassificationLang(map[string][]*service.Info{"en": {{Sub: "valid"}}}),
+				), nil
+			},
+			mockSender: func(t *testing.T, msg *service.Notification) (messageId string, err error) {
+				assert.Equal(t, "localhost", msg.Data["X-Forwarded-Host"])
+				return "", nil
+			},
+			statusCode: http.StatusAccepted,
+		},
+	}
+	for _, test := range tests {
+		defer func() {
+			identity.ResetMock()
+			factory.ResetMockSender()
+			factory.ResetMockTemplate()
+		}()
+		viper.Set("mail.header2data", test.forwardedHeaders)
+		t.Run(test.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			var requestData *bytes.Buffer
+			if test.requestBody != nil {
+				data, _ := json.Marshal(test.requestBody)
+				requestData = bytes.NewBuffer(data)
+			} else {
+				requestData = bytes.NewBuffer([]byte{})
+			}
+
+			c.Request, _ = http.NewRequest("POST", "/notification", requestData)
+			c.Request.Header.Set("Content-Type", "application/json")
+			for k, v := range test.header {
+				c.Request.Header.Set(k, v[0])
+			}
+			factory.SetMockSender(test.mockSender, factory.WithMockSenderT(t))
+			identity.SetMockSubToInfoFunc(test.mockSubToInfo)
+
+			notification := &notification{}
+			notification.SetErrorHandler(func(c *gin.Context, err error) {
+				if apiErr, ok := err.(apiErr.ApiError); ok {
+					c.JSON(apiErr.GetStatus(), gin.H{
+						"error": apiErr.Error(),
+					})
+				}
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+			})
+			notification.createNotification(c)
+
+			assert.Equal(t, test.statusCode, w.Code)
+		})
+	}
 }
