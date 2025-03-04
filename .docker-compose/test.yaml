@@ -19,10 +19,12 @@ services:
       - traefik.http.routers.notify.service=notify
       - traefik.http.middlewares.notify_mid.plugin.header2post.notifyheader=X-Notify
       - traefik.http.middlewares.notify_mid.plugin.header2post.notifyurl=http://oosa_notify:9080/notification
+      - traefik.http.middlewares.notify_mid.plugin.header2post.forwardheaders=X-Forwarded-Host
       - traefik.http.routers.notify.middlewares=notify_mid
     environment:
       - AWS_SES_CREDENTAILS_FILENAME=/etc/aws/credentails
       - AWS_SES_FROM="OOSA Test Group" <no-apply@oosa.life>
+      - MAIL_HEADER2DATA=X-Forwarded-Host
       - IDENTITY_URL=http://kratos:4434
       - API_TEST=true
     ports:

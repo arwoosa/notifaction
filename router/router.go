@@ -7,7 +7,7 @@ import (
 
 func GetApis() []apitool.GinAPI {
 	apis := []apitool.GinAPI{
-		&notification{},
+		newNotification(),
 		&health{},
 	}
 	if viper.GetBool("api.test") {

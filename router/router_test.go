@@ -465,7 +465,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 		name             string
 		requestBody      *request.CreateNotification
 		header           http.Header
-		forwardedHeaders []string
+		forwardedHeaders string
 		mockSubToInfo    func(from string, to []string) (*identity.ClassificationLang, error)
 		mockSender       func(t *testing.T, msg *service.Notification) (messageId string, err error)
 		statusCode       int
@@ -481,7 +481,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 			header: http.Header{
 				"X-Forwarded-Host": []string{"localhost"},
 			},
-			forwardedHeaders: []string{""},
+			forwardedHeaders: "",
 			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
 				return identity.NewClassificationLang(
 					identity.WithClassificationLangKeys([]string{"en"}),
@@ -504,7 +504,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 				Event: "event",
 				Data:  map[string]string{},
 			},
-			forwardedHeaders: []string{"X-Forwarded-Not-Exist"},
+			forwardedHeaders: "X-Forwarded-Not-Exist",
 			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
 				return identity.NewClassificationLang(
 					identity.WithClassificationLangKeys([]string{"en"}),
@@ -530,7 +530,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 			header: http.Header{
 				"X-Forwarded-Host": []string{"localhost"},
 			},
-			forwardedHeaders: []string{"X-Forwarded-Host"},
+			forwardedHeaders: "X-Forwarded-Host",
 			mockSubToInfo: func(from string, to []string) (*identity.ClassificationLang, error) {
 				return identity.NewClassificationLang(
 					identity.WithClassificationLangKeys([]string{"en"}),
@@ -572,7 +572,7 @@ func TestCreateNotificationWithForwardedHeaders(t *testing.T) {
 			factory.SetMockSender(test.mockSender, factory.WithMockSenderT(t))
 			identity.SetMockSubToInfoFunc(test.mockSubToInfo)
 
-			notification := &notification{}
+			notification := newNotification()
 			notification.SetErrorHandler(func(c *gin.Context, err error) {
 				if apiErr, ok := err.(apiErr.ApiError); ok {
 					c.JSON(apiErr.GetStatus(), gin.H{
