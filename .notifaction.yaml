@@ -12,8 +12,7 @@ log:
 
 mail:
   provider: aws
-  header2data:
-  - X-Forwarded-Host
+  header2data: X-Forwarded-Host,X-Forwarded-Host2
 
 aws:
   ses:

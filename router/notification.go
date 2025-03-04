@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/94peter/microservice/apitool"
@@ -17,6 +18,16 @@ import (
 
 type notification struct {
 	err.CommonErrorHandler
+}
+
+var header2data []string
+
+func newNotification() *notification {
+	header2dataStr := viper.GetString("mail.header2data")
+	if header2dataStr != "" {
+		header2data = strings.Split(header2dataStr, ",")
+	}
+	return &notification{}
 }
 
 func (m *notification) GetHandlers() []*apitool.GinHandler {
@@ -57,7 +68,6 @@ func (m *notification) createNotification(c *gin.Context) {
 		return
 	}
 	requestBody.Data["FROM"] = cl.From.Name
-	header2data := viper.GetStringSlice("mail.header2data")
 	for _, h := range header2data {
 		if c.Request.Header.Get(h) == "" {
 			requestBody.Data[h] = "missing header: " + h
