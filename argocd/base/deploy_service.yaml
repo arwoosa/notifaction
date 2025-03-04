@@ -64,11 +64,13 @@ spec:
             secretKeyRef:
               name: notifaction-secrets
               key: MAIL_PROVIDER
-        - name: NOTIFACTION_IDENTITY_URL
+        - name: IDENTITY_URL
           valueFrom:
             secretKeyRef:
               name: notifaction-secrets
               key: NOTIFACTION_IDENTITY_URL
+        - name: MAIL_HEADER2DATA
+          value: X-Forwarded-Host
         volumeMounts:
           - name: notifaction-secrets
             mountPath: /etc/.aws/credentails
