@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: notifaction
+  name: notifaction-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifaction
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: notifaction
+    spec:
+      containers:
+      - image: sjc.vultrcr.com/oosa/app-notifaction:1.0.0
+        name: notifaction
+        livenessProbe:
+          httpGet:
+            path: /health/alive
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        env:
+        - name: API_PORT
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: APP_PORT
+        - name: AWS_SES_FROM
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: AWS_SES_FROM
+        - name: AWS_SES_REGION
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: AWS_SES_REGION
+        - name: AWS_SES_CREDENTAILS_FILENAME
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: AWS_SES_CREDENTAILS_FILENAME
+        - name: MAIL_PROVIDER
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: MAIL_PROVIDER
+        - name: NOTIFACTION_IDENTITY_URL
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: NOTIFACTION_IDENTITY_URL
+        volumeMounts:
+          - name: notifaction-secrets
+            mountPath: /etc/.aws/credentails
+            subPath: aws_credentials
+      volumes:
+        - name: notifaction-secrets
+          secret:  
+            secretName: notifaction-secrets
