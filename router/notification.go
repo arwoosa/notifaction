@@ -3,7 +3,6 @@ package router
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/94peter/microservice/apitool"
@@ -23,10 +22,7 @@ type notification struct {
 var header2data []string
 
 func newNotification() *notification {
-	header2dataStr := viper.GetString("mail.header2data")
-	if header2dataStr != "" {
-		header2data = strings.Split(header2dataStr, ",")
-	}
+	header2data = viper.GetStringSlice("mail.header2data")
 	return &notification{}
 }
 

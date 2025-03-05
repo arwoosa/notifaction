@@ -24,6 +24,7 @@ services:
     environment:
       - AWS_SES_CREDENTAILS_FILENAME=/etc/aws/credentails
       - AWS_SES_FROM="OOSA Test Group" <no-apply@oosa.life>
+      # Use space to split multiple headers: example: - MAIL_HEADER2DATA=X-Forwarded-Host X-Forwarded-Host2
       - MAIL_HEADER2DATA=X-Forwarded-Host
       - IDENTITY_URL=http://kratos:4434
       - API_TEST=true
