@@ -48,7 +48,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: notifaction-secrets
-              key: APP_DEBUG
+              key: API_DEBUG
         - name: LOG_LEVEL
           valueFrom:
             secretKeyRef:
