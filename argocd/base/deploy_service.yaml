@@ -44,6 +44,16 @@ spec:
             secretKeyRef:
               name: notifaction-secrets
               key: APP_PORT
+        - name: API_DEBUG
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: APP_DEBUG
+        - name: LOG_LEVEL
+          valueFrom:
+            secretKeyRef:
+              name: notifaction-secrets
+              key: LOG_LEVEL
         - name: AWS_SES_FROM
           valueFrom:
             secretKeyRef:
