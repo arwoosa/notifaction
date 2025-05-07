@@ -1,0 +1,17 @@
+event: EVENT_JOIN_DENIED
+lang: zh-TW
+subject: 您申請加入的OOSA活動有了新回覆！
+body:
+  plaint: |
+    親愛的用戶您好，{{CREATOR_NAME}}婉拒您加入 {{EVENT_NAME}}活動
+    點此進入OOSA查看活動詳情👉🏻： https://{{X-FORWARDED-HOST}}
+
+    [OOSA-人類野放計畫] 團隊敬上
+    如果您並未註冊 [OOSA]，請忽略此封信。
+
+  html: |
+    <p>親愛的用戶您好，{{CREATOR_NAME}}婉拒您加入 {{EVENT_NAME}}活動</p>
+    <p>點此進入OOSA查看活動詳情👉🏻：<a href="https://{{X-FORWARDED-HOST}}">https://{{X-FORWARDED-HOST}}</a></p>
+    <br/>
+    <p>OOSA-人類野放計劃 團隊敬上</p>
+    <p>如果您並未註冊 [OOSA]，請忽略此封信。</p>
