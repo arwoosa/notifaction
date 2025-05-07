@@ -66,3 +66,12 @@ type ListTemplateResponse struct {
 	NextToken *string
 	Templates []*ListTemplate
 }
+
+type DetailTemplateResponse struct {
+	Title   string
+	Subject string
+	Body    struct {
+		Plaint string
+		Html   string
+	}
+}

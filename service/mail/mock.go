@@ -34,6 +34,12 @@ func WithListTemplate(f func(token string) (*dao.ListTemplateResponse, error)) t
 	}
 }
 
+func WithDetailTemplate(f func(name string) (*dao.DetailTemplateResponse, error)) templateStoreOpt {
+	return func(m *mockTemplateStore) {
+		m.detailTemplate = f
+	}
+}
+
 func NewMockTemplateStore(opts ...templateStoreOpt) TemplateStore {
 	m := &mockTemplateStore{}
 	for _, opt := range opts {
@@ -48,6 +54,7 @@ type mockTemplateStore struct {
 	createTemplate  func(tpl *dao.Template) error
 	deleteTemplate  func(name string) error
 	listTemplate    func(token string) (*dao.ListTemplateResponse, error)
+	detailTemplate  func(name string) (*dao.DetailTemplateResponse, error)
 }
 
 func (m *mockTemplateStore) IsTemplateExist(name string) (bool, error) {
@@ -68,4 +75,8 @@ func (m *mockTemplateStore) Delete(name string) error {
 
 func (m *mockTemplateStore) List(token string) (*dao.ListTemplateResponse, error) {
 	return m.listTemplate(token)
+}
+
+func (m *mockTemplateStore) Detail(name string) (*dao.DetailTemplateResponse, error) {
+	return m.detailTemplate(name)
 }

@@ -119,3 +119,19 @@ func (a *awsTplImpl) Delete(name string) error {
 	})
 	return err
 }
+
+func (a *awsTplImpl) Detail(name string) (*dao.DetailTemplateResponse, error) {
+	tpl, err := a.GetEmailTemplate(&sesv2.GetEmailTemplateInput{
+		TemplateName: aws.String(name),
+	})
+	if err != nil {
+		return nil, err
+	}
+	resp := &dao.DetailTemplateResponse{}
+	resp.Title = *tpl.TemplateName
+	resp.Subject = *tpl.TemplateContent.Subject
+	resp.Body.Plaint = *tpl.TemplateContent.Text
+	resp.Body.Html = *tpl.TemplateContent.Html
+
+	return resp, nil
+}
