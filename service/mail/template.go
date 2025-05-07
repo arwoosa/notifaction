@@ -6,7 +6,7 @@ type Template interface {
 	Apply(tplfile string) error
 	List(nextToken string) (*dao.ListTemplateResponse, error)
 	Delete(name string) error
-	// Detail(name string) (string, string, string, string, error)
+	Detail(name string) (*dao.DetailTemplateResponse, error)
 }
 
 type TemplateStore interface {
@@ -15,4 +15,5 @@ type TemplateStore interface {
 	CreateTpl(tpl *dao.Template) error
 	Delete(name string) error
 	List(token string) (*dao.ListTemplateResponse, error)
+	Detail(name string) (*dao.DetailTemplateResponse, error)
 }

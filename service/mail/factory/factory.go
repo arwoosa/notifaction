@@ -151,3 +151,7 @@ func (a *tplImpl) Delete(name string) error {
 func (a *tplImpl) List(nextToken string) (*dao.ListTemplateResponse, error) {
 	return a.store.List(nextToken)
 }
+
+func (a *tplImpl) Detail(name string) (*dao.DetailTemplateResponse, error) {
+	return a.store.Detail(name)
+}

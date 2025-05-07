@@ -63,3 +63,7 @@ func (m *mockTemplateImpl) Apply(tplfile string) error {
 func (m *mockTemplateImpl) Delete(name string) error {
 	return nil
 }
+
+func (m *mockTemplateImpl) Detail(name string) (*dao.DetailTemplateResponse, error) {
+	return nil, nil
+}
