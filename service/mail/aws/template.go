@@ -48,6 +48,10 @@ type awsTplImpl struct {
 	awsTemplateStore
 }
 
+// CreateTpl creates a new email template in AWS SES using the provided template data.
+// It constructs an SES CreateEmailTemplateInput with the template name, subject, HTML body, and plain text body.
+// If the creation is successful, it returns nil; otherwise, it returns an error.
+
 func (a *awsTplImpl) CreateTpl(tpl *dao.Template) error {
 	_, err := a.CreateEmailTemplate(&sesv2.CreateEmailTemplateInput{
 		TemplateName: aws.String(tpl.GetName()),

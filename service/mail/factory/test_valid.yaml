@@ -2,5 +2,5 @@ event: aaa
 lang: en
 subject: subje
 body:
-  text: text
+  plaint: text
   html: html
