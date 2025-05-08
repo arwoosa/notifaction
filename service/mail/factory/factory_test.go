@@ -23,6 +23,7 @@ func TestNewApiSender(t *testing.T) {
 		provider   string
 		wantErr    bool
 		wantSender bool
+		preFunc    func()
 	}{
 		{
 			name:       "AWS provider",
@@ -42,10 +43,28 @@ func TestNewApiSender(t *testing.T) {
 			wantErr:    true,
 			wantSender: false,
 		},
+		{
+			name:       "SMTP provider cant not dial",
+			provider:   "smtp",
+			wantErr:    true,
+			wantSender: false,
+			preFunc: func() {
+				viper.Reset()
+				viper.Set("aws.ses.region", "region")
+				viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
+				viper.Set("aws.ses.credentails.profile", "default")
+				viper.Set("mail.from", "test@example.com")
+				viper.Set("smtp.url", "smtp://user:pass@smtp.example.com:587")
+				viper.Set("mail.template.source", "aws")
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.preFunc != nil {
+				tt.preFunc()
+			}
 			viper.Set("mail.provider", tt.provider)
 			sender, err := NewApiSender()
 			if (err != nil) != tt.wantErr {
