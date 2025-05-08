@@ -36,8 +36,12 @@ func NewApiSender() (mail.ApiSender, error) {
 		if err != nil {
 			return nil, err
 		}
+		sendCloser, err := smtp.ParseUrl(url)
+		if err != nil {
+			return nil, err
+		}
 		return smtp.NewApiSender(
-			smtp.WithUrl(url),
+			smtp.WithSendCloser(sendCloser),
 			smtp.WithFrom(from),
 			smtp.WithTemplate(tpl),
 		)

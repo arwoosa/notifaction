@@ -19,9 +19,33 @@ func WithTemplate(tpl mail.Template) apiSenderOpt {
 	}
 }
 
-func WithUrl(url string) apiSenderOpt {
+func ParseUrl(myurl string) (gomail.SendCloser, error) {
+	parsedUrl, err := url.Parse(myurl)
+	if err != nil {
+		return nil, fmt.Errorf("invalid smtp url: %w", err)
+	}
+	portNum, err := strconv.Atoi(parsedUrl.Port())
+	if err != nil {
+		return nil, fmt.Errorf("invalid port: %w", err)
+	}
+	pass, _ := parsedUrl.User.Password()
+
+	dialer := gomail.NewDialer(
+		parsedUrl.Hostname(),
+		portNum,
+		parsedUrl.User.Username(),
+		pass,
+	)
+	sendCloser, err := dialer.Dial()
+	if err != nil {
+		return nil, fmt.Errorf("failed to dial smtp: %w", err)
+	}
+	return sendCloser, nil
+}
+
+func WithSendCloser(sendCloser gomail.SendCloser) apiSenderOpt {
 	return func(s *smtp) {
-		s.url = url
+		s.sendCloser = sendCloser
 	}
 }
 
@@ -36,33 +60,30 @@ func NewApiSender(opts ...apiSenderOpt) (mail.ApiSender, error) {
 	for _, opt := range opts {
 		opt(s)
 	}
-	parsedUrl, err := url.Parse(s.url)
-	if err != nil {
-		return nil, fmt.Errorf("invalid smtp url: %w", err)
+	if s.sendCloser == nil {
+		return nil, fmt.Errorf("sendCloser is required")
 	}
-	portNum, err := strconv.Atoi(parsedUrl.Port())
-	if err != nil {
-		return nil, fmt.Errorf("invalid port: %w", err)
+	if s.from == "" {
+		return nil, fmt.Errorf("from is required")
 	}
-	pass, _ := parsedUrl.User.Password()
-	s.dialer = gomail.NewDialer(
-		parsedUrl.Hostname(),
-		portNum,
-		parsedUrl.User.Username(),
-		pass,
-	)
-
+	if s.tpl == nil {
+		return nil, fmt.Errorf("template is required")
+	}
 	return s, nil
 }
 
 type smtp struct {
-	tpl    mail.Template
-	url    string
-	from   string
-	dialer *gomail.Dialer
+	tpl        mail.Template
+	from       string
+	sendCloser gomail.SendCloser
 }
 
 func (s *smtp) Send(notify *service.Notification) (string, error) {
+	// Validate recipients
+	if len(notify.SendTo) == 0 {
+		return "", fmt.Errorf("no recipients specified")
+	}
+
 	// Create a new message
 	msg := gomail.NewMessage()
 
@@ -96,9 +117,8 @@ func (s *smtp) Send(notify *service.Notification) (string, error) {
 	// Set body content
 	msg.SetBody("text/html", tplDetail.Body.Html)
 	msg.SetBody("text/plain", tplDetail.Body.Plaint)
-
-	// Send the email
-	if err := s.dialer.DialAndSend(msg); err != nil {
+	defer s.sendCloser.Close()
+	if err := gomail.Send(s.sendCloser, msg); err != nil {
 		return "", fmt.Errorf("failed to send email: %w", err)
 	}
 
