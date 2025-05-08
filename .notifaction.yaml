@@ -11,13 +11,16 @@ log:
   target: os
 
 mail:
-  provider: aws
+  from: "\"OOSA Group\" <developer@oosa.life>"
+  template:
+    source: aws
+  provider: smtp # aws | smtp
   header2data:
   - X-Forwarded-Host
+  
 
 aws:
-  ses:
-    from: "\"OOSA Group\" <developer@oosa.life>"
+  ses: 
     region: ap-northeast-1
     credentails:
       filename: /Users/peter/Codes/oosa/secrets/.aws/credentails
@@ -25,3 +28,6 @@ aws:
 
 identity:
   url: http://localhost:4434
+
+smtp:
+  url: smtp://localhost:25

@@ -54,9 +54,9 @@ func NewApiSender(opts ...apiSenderOpt) (mail.ApiSender, error) {
 		return nil, errors.New("template store is nil")
 	}
 
-	from := viper.GetString("aws.ses.from")
+	from := viper.GetString("mail.from")
 	if from == "" {
-		return nil, errors.New("aws.ses.from is empty")
+		return nil, errors.New("mail.from is empty")
 	}
 	sender.from = from
 	return sender, nil

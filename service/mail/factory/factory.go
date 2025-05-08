@@ -10,6 +10,7 @@ import (
 	"github.com/arwoosa/notifaction/service/mail"
 	"github.com/arwoosa/notifaction/service/mail/aws"
 	"github.com/arwoosa/notifaction/service/mail/dao"
+	"github.com/arwoosa/notifaction/service/mail/smtp"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
@@ -19,10 +20,30 @@ func NewApiSender() (mail.ApiSender, error) {
 		return newMockSender()
 	}
 	provider := viper.GetString("mail.provider")
-	if provider == "aws" {
+	switch provider {
+	case "aws":
 		return aws.NewApiSender()
+	case "smtp":
+		url := viper.GetString("smtp.url")
+		if url == "" {
+			return nil, errors.New("smtp.url is empty")
+		}
+		from := viper.GetString("mail.from")
+		if from == "" {
+			return nil, errors.New("mail.from is empty")
+		}
+		tpl, err := NewTemplate()
+		if err != nil {
+			return nil, err
+		}
+		return smtp.NewApiSender(
+			smtp.WithUrl(url),
+			smtp.WithFrom(from),
+			smtp.WithTemplate(tpl),
+		)
+	default:
+		return nil, errors.New("invalid mail provider")
 	}
-	return nil, errors.New("invalid mail provider")
 }
 
 type factoryOpt func(*tplImpl)
@@ -58,7 +79,7 @@ func NewTemplate(opts ...factoryOpt) (mail.Template, error) {
 		tplImpl.allowedDirs = []string{homeDir}
 	}
 
-	provider := viper.GetString("mail.provider")
+	provider := viper.GetString("mail.template.source")
 	var store mail.TemplateStore
 	var err error
 	if provider == "aws" {

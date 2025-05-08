@@ -17,7 +17,7 @@ func TestNewApiSender(t *testing.T) {
 	viper.Set("aws.ses.region", "region")
 	viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
 	viper.Set("aws.ses.credentails.profile", "default")
-	viper.Set("aws.ses.from", "test@example.com")
+	viper.Set("mail.from", "test@example.com")
 	tests := []struct {
 		name       string
 		provider   string
@@ -75,7 +75,7 @@ func TestNewTemplate(t *testing.T) {
 				viper.Set("aws.ses.region", "region")
 				viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
 				viper.Set("aws.ses.credentails.profile", "default")
-				viper.Set("aws.ses.from", "test@example.com")
+				viper.Set("mail.from", "test@example.com")
 				viper.Set("mail.provider", "aws")
 			},
 			wantDirs: []string{wantDir},
@@ -87,7 +87,7 @@ func TestNewTemplate(t *testing.T) {
 				viper.Set("aws.ses.region", "region")
 				viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
 				viper.Set("aws.ses.credentails.profile", "default")
-				viper.Set("aws.ses.from", "test@example.com")
+				viper.Set("mail.from", "test@example.com")
 				viper.Set("mail.provider", "aws")
 			},
 			wantDirs: []string{projectPath + "/service/mail"},
