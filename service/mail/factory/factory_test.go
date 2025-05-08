@@ -76,7 +76,7 @@ func TestNewTemplate(t *testing.T) {
 				viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
 				viper.Set("aws.ses.credentails.profile", "default")
 				viper.Set("mail.from", "test@example.com")
-				viper.Set("mail.provider", "aws")
+				viper.Set("mail.template.source", "aws")
 			},
 			wantDirs: []string{wantDir},
 		},
@@ -88,19 +88,19 @@ func TestNewTemplate(t *testing.T) {
 				viper.Set("aws.ses.credentails.filename", "../aws/test_credentials")
 				viper.Set("aws.ses.credentails.profile", "default")
 				viper.Set("mail.from", "test@example.com")
-				viper.Set("mail.provider", "aws")
+				viper.Set("mail.template.source", "aws")
 			},
 			wantDirs: []string{projectPath + "/service/mail"},
 		},
 		{
 			name:     "invalid mail provider",
-			preFunc:  func() { viper.Set("mail.provider", "notexist") },
+			preFunc:  func() { viper.Set("mail.template.source", "notexist") },
 			wantErr:  true,
 			wantDirs: nil,
 		},
 		{
 			name:     "new template with aws provider fail",
-			preFunc:  func() { viper.Set("mail.provider", "aws") },
+			preFunc:  func() { viper.Set("mail.template.source", "aws") },
 			wantDirs: []string{wantDir},
 			wantErr:  true,
 		},
