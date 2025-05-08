@@ -364,7 +364,7 @@ func TestNewApiSender(t *testing.T) {
 				viper.Set("aws.ses.region", "us-west-2")
 				viper.Set("aws.ses.credentails.filename", "test_credentials")
 				viper.Set("aws.ses.credentails.profile", "default")
-				viper.Set("aws.ses.from", "test@example.com")
+				viper.Set("mail.from", "test@example.com")
 			},
 		},
 		{
@@ -372,11 +372,11 @@ func TestNewApiSender(t *testing.T) {
 			wantErr: true,
 			sessErr: errors.New("session error"),
 			prefunc: func() {
-				viper.Set("aws.ses.from", "test@example.com")
+				viper.Set("mail.from", "test@example.com")
 			},
 		},
 		{
-			name:    "Empty 'aws.ses.from' configuration",
+			name:    "Empty 'mail.from' configuration",
 			wantErr: true,
 			sessErr: nil,
 			prefunc: func() {
@@ -493,7 +493,7 @@ func TestSend(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Mock template store
-			viper.Set("aws.ses.from", tt.notify.From.Email)
+			viper.Set("mail.from", tt.notify.From.Email)
 			sender, err := NewApiSender(tt.opts...)
 			if err != nil {
 				t.Errorf("NewApiSender() error = %v", err)

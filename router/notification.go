@@ -72,13 +72,14 @@ func (m *notification) createNotification(c *gin.Context) {
 		requestBody.Data[h] = c.Request.Header.Get(h)
 	}
 	var errSends []sendError
+	successResp := make([]gin.H, 0)
 	for _, lang := range cl.GetLangs() {
 		for i, info := range cl.GetInfos(lang) {
 			if i > 0 {
 				time.Sleep(200 * time.Microsecond)
 			}
 			requestBody.Data["TO"] = info.Name
-			_, err = sender.Send(&service.Notification{
+			mid, err := sender.Send(&service.Notification{
 				Event:  requestBody.Event,
 				Lang:   lang,
 				From:   cl.From,
@@ -87,18 +88,28 @@ func (m *notification) createNotification(c *gin.Context) {
 			})
 			if err != nil {
 				errSends = append(errSends, sendError{err: err, info: info})
+			} else {
+				successResp = append(successResp, gin.H{
+					"send_to": info.Name,
+					"mid":     mid,
+					"lang":    lang,
+					"from":    cl.From.Name,
+					"event":   requestBody.Event,
+				})
 			}
 		}
 	}
 
 	if len(errSends) == 0 {
-		c.JSON(http.StatusAccepted, gin.H{})
+		c.JSON(http.StatusAccepted, gin.H{
+			"success": successResp,
+		})
 		return
 	}
 
 	if len(errSends) == len(requestBody.To) {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": errSends[0].err.Error(),
+			"error": errSends[0].err.Error(),
 		})
 		return
 	}
