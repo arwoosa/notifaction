@@ -17,10 +17,13 @@ steps:
       password:
         from_secret: REGISTRY_TOKEN
   notify-with-webhook:
-    image: 94peter/woodpecker-webhook
+    image: 94peter/woodpecker-webhook:v0.0.3
     settings:
       webhooks:
         - webhook:
             from_secret: GOOGLE_WEBHOOK_URL
           provider: google_chat
+        - webhook:
+            from_secret: PORTAINER_WEBHOOK_URL
+          provider: portainer
       debug: false
